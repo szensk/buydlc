@@ -1,0 +1,6 @@
+[submodule "gravity/Simple-Tiled-Implementation"]
+	path = gravity/Simple-Tiled-Implementation
+	url = https://github.com/karai17/Simple-Tiled-Implementation.git
+[submodule "gravity/inpush"]
+	path = gravity/inpush
+	url = https://github.com/szensk/inpush.git
