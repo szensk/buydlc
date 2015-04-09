@@ -2,7 +2,6 @@
 local sti    = require 'sti'
 local push   = require 'inpush'
 local action = push.action
-push = push.push
 
 -- actual stuff
 local map 
@@ -16,30 +15,43 @@ local player = {
   h = 32,
 }
 
+local function create_world(args)
+  local meter = args.meter or 16
+  local gravity = args.gravity or 9.81 * meter
+  love.physics.setMeter(meter)
+  local world = love.physics.newWorld(0,0)
+  world:setGravity(0, gravity)
+  return world
+end
+
+local function create_terrain(map)
+  local terrain = map:initWorldCollision(world)
+    for i,c in ipairs(terrain) do
+    c.fixture:setFriction(1)
+  end
+  return terrain
+end
+
 function love.load()
   -- white background
   love.graphics.setBackgroundColor(255,255,255)
   -- map
   map = sti.new("assets/tube")
   -- physiks
-  love.physics.setMeter(16)
-  world = love.physics.newWorld(0,0) -- a whole new world...
-  world:setGravity(0, 9.81*16)
-  collision = map:initWorldCollision(world)
-  for i,c in ipairs(collision) do
-    c.fixture:setFriction(1)
-  end
+  world = create_world{meter = 16}
+  collision = create_terrain(map)
   player.body = love.physics.newBody(world, player.sx, player.sy, "dynamic")
   player.body:setMass(1000)
   player.body:setFixedRotation(true)
-  player.shape = love.physics.newRectangleShape(player.w - 2, player.h -2 )
+  player.shape   = love.physics.newRectangleShape(player.w - 2, player.h -2 )
   player.fixture = love.physics.newFixture(player.body, player.shape, 1)
   -- input
   push.bind('a', function() player.body:applyForce(-400, 0) end)
   push.bind('d', function() player.body:applyForce(400, 0)  end)
-  push.bind('w', function() player.body:applyForce(0, -1337)  end)
+  push.bind('w', function() player.body:applyForce(0, -1337) end)
   push.bind('s', function() end)
   push.bind('q', action.toggleCollision)
+  push.bind('escape', function() love.event.quit() end)
 end
 
 function love.draw()
@@ -70,6 +82,5 @@ function love.update(dt)
 end
 
 function love.keypressed(key, rep)
-  if key == "escape" then love.event.quit() end
   push.keypressed(key)
 end
