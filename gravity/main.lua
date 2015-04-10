@@ -19,6 +19,11 @@ local player = {
   floating = true
 }
 local mushroom = love.graphics.newImage("assets/Mushroom - 1UP.png")
+local CATEGORIES = {
+  PLAYER = 1,
+  STATIC = 2,
+  ITEMS  = 3
+}
 local items = {
   
 }
@@ -54,6 +59,7 @@ local function create_terrain(map)
   local terrain = map:initWorldCollision(world)
     for i,c in ipairs(terrain) do
       --c.fixture:setFriction(5)
+      c.fixture:setCategory(CATEGORIES.STATIC)
     end
   return terrain
 end
@@ -77,7 +83,9 @@ local function new_item(x,y)
     i.body:setFixedRotation(true)
     i.shape = love.physics.newRectangleShape(16, 16)
     i.fixture = love.physics.newFixture(i.body, i.shape, 1)
-    i.fixture:setRestitution(1)
+    i.fixture:setRestitution(0.4)
+    i.fixture:setCategory(CATEGORIES.ITEMS)
+    i.fixture:setMask(CATEGORIES.ITEMS)
     i.fixture:setUserData(i)
   return i
 end
@@ -96,6 +104,7 @@ function love.load()
   player.body:setFixedRotation(true)
   player.shape   = love.physics.newRectangleShape(player.w - 2, player.h -2 )
   player.fixture = love.physics.newFixture(player.body, player.shape, 1)
+  player.fixture:setCategory(CATEGORIES.PLAYER)
   player.fixture:setUserData(player)
   --input
   set_controls()
@@ -108,7 +117,7 @@ function love.draw()
   love.graphics.translate(tx, ty)
   map:draw()
   for i,v in ipairs(items) do
-    love.graphics.draw(mushroom, v.body:getPosition())
+    love.graphics.draw(mushroom, v.body:getX()-8, v.body:getY()-8)
   end
   local r,g,b,a = love.graphics.getColor()
   -- debug player info, in blue
