@@ -16,7 +16,8 @@ local player = {
   sy = 28 * 16,
   w = 16,
   h = 32,
-  floating = true
+  floating = true,
+  shrooms = 0
 }
 local mushroom = love.graphics.newImage("assets/Mushroom - 1UP.png")
 local CATEGORIES = {
@@ -24,18 +25,24 @@ local CATEGORIES = {
   STATIC = 2,
   ITEMS  = 3
 }
-local items = {
-  
-}
+local items = {}
 
 local function beginContact(a, b, collision)
   if b:getUserData() == player then
     player.floating = false
     local nx, ny = collision:getNormal()
-    print(nx, ny)
+    -- print(nx, ny)
     -- when you jump and hit a block
     -- unfortunately need to handle when the collision 
     if nx == -1 and ny == 0 then player.floating = true end
+  end
+  local item = b:getUserData()
+  local actor = a:getUserData()
+  if item and item.typ == "pickup" and actor == player then
+    player.shrooms = player.shrooms + 1
+    item.fixture:destroy()
+    item.body:destroy()
+    table.remove(items, item.id) --maybe a double linked list instead?
   end
 end
 
@@ -77,10 +84,11 @@ local function set_controls()
   push.bind('escape', function() love.event.quit() end)
 end
 
-local function new_item(x,y)
-  local i = {}
+local function new_item(x,y,idx)
+  local i = { name = "mushroom", typ = "pickup", id = idx + 1 }
     i.body  = love.physics.newBody(world, x, y, "dynamic")
     i.body:setFixedRotation(true)
+    i.body:setMass(0.001)
     i.shape = love.physics.newRectangleShape(16, 16)
     i.fixture = love.physics.newFixture(i.body, i.shape, 1)
     i.fixture:setRestitution(0.4)
@@ -91,46 +99,57 @@ local function new_item(x,y)
 end
 
 function love.load()
-  -- white background
   love.graphics.setBackgroundColor(255,255,255)
   -- map
   map = sti.new("assets/tube")
   -- physiks
   world = create_world{meter = 16}
   collision = create_terrain(map)
+  -- create player collision
   player.body = love.physics.newBody(world, player.sx, player.sy, "dynamic")
   --player.body:setUserData(player)
   player.body:setMass(1000)
   player.body:setFixedRotation(true)
-  player.shape   = love.physics.newRectangleShape(player.w - 2, player.h -2 )
+  player.shape   = love.physics.newRectangleShape(player.w - 2, player.h - 2)
   player.fixture = love.physics.newFixture(player.body, player.shape, 1)
   player.fixture:setCategory(CATEGORIES.PLAYER)
   player.fixture:setUserData(player)
-  --input
+  -- input
   set_controls()
 end
 
 function love.draw()
+  -- store color
+  local r,g,b,a = love.graphics.getColor()
+  -- setup camera
   local tx = love.graphics.getWidth()/2 - (player.body:getX() + player.w/2)
   local ty = love.graphics.getHeight()/2 - (player.body:getY() + player.h/2)
   tx, ty = math.floor(tx), math.floor(ty) --removes jitter from subpixel alignment
   love.graphics.translate(tx, ty)
+  -- draw map
   map:draw()
+  -- draw items
   for i,v in ipairs(items) do
     love.graphics.draw(mushroom, v.body:getX()-8, v.body:getY()-8)
+    v.id = i
   end
-  local r,g,b,a = love.graphics.getColor()
   -- debug player info, in blue
   love.graphics.setColor(0, 162, 232)
-  love.graphics.print( ("x: %0.0f y: %0.0f"):format(player.body:getPosition()), -tx, -ty)
+  local px, py = math.floor(player.body:getX()), math.floor(player.body:getY())
+  love.graphics.print( ("x: %0.0f y: %0.0f"):format(px, py), -tx, -ty)
   --collision box
-  love.graphics.print("floating: " .. tostring(player.floating), player.body:getX()-32, player.body:getY()-32)
-  love.graphics.polygon("line", player.body:getWorldPoints(player.shape:getPoints()))
+  love.graphics.print("floating: " .. tostring(player.floating), px-32, py-32)
+  -- smooth out point jitter
+  local pts = {player.body:getWorldPoints(player.shape:getPoints())}
+  for i,v in ipairs(pts) do pts[i] = math.floor(v) end
+  -- draw points
+  love.graphics.polygon("line", pts)
   -- debug collision map, in red
   if showCollide then 
     love.graphics.setColor(255, 21, 0)
     map:drawWorldCollision(collision)
   end
+  -- restore color
   love.graphics.setColor(r,g,b,a)
 end
 
@@ -138,7 +157,6 @@ function love.update(dt)
   map:update(dt)
   world:update(dt)
   push.update(dt)
-  local lvx, lvy = player.body:getLinearVelocity()
   love.window.setTitle("gravity: " .. tostring(love.timer.getFPS()))
   if action.toggleCollision.pressed then
     showCollide = not showCollide
@@ -149,7 +167,7 @@ function love.mousepressed(x,y, mb)
   if mb == 'l' then
     local tx = love.graphics.getWidth()/2 - (player.body:getX() + player.w/2)
     local ty = love.graphics.getHeight()/2 - (player.body:getY() + player.h/2)
-    items[#items + 1] = new_item(x-tx,y-ty)
+    items[#items + 1] = new_item(x-tx,y-ty, #items)
   end
 end
 
