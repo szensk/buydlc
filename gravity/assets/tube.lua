@@ -148,7 +148,7 @@ return {
     {
       type = "objectgroup",
       name = "Collision",
-      visible = true,
+      visible = false,
       opacity = 1,
       properties = {
         ["collidable"] = "true"
