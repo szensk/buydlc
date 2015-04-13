@@ -4,3 +4,6 @@
 [submodule "gravity/inpush"]
 	path = gravity/inpush
 	url = https://github.com/szensk/inpush.git
+[submodule "gravity/anim8"]
+	path = gravity/anim8
+	url = https://github.com/kikito/anim8.git

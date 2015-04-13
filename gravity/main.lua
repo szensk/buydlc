@@ -4,6 +4,7 @@
 -- libraries
 local sti    = require 'sti'
 local push   = require 'inpush'
+local anim   = require 'anim8'
 local action = push.action
 
 -- actual stuff
