@@ -19,7 +19,7 @@ local player = {
   floating = true,
   shrooms = 0
 }
-local mushroom = love.graphics.newImage("assets/Mushroom - 1UP.png")
+local mushroom = love.graphics.newImage("assets/blueshroom.png")
 local CATEGORIES = {
   PLAYER = 1,
   STATIC = 2,
