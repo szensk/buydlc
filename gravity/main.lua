@@ -12,13 +12,16 @@ local map
 local world
 local collision
 local showCollide = false
+local mario = love.graphics.newImage("assets/marios.png")
+local grid  = anim.newGrid(40, 34, mario:getWidth(), mario:getHeight())
 local player = {
   sx = 3 * 16,
   sy = 28 * 16,
   w = 16,
   h = 32,
   floating = true,
-  shrooms = 0
+  shrooms = 0,
+  anim = anim.newAnimation(grid('1-8', 1), 0.1)
 }
 local mushroom = love.graphics.newImage("assets/blueshroom.png")
 local CATEGORIES = {
@@ -134,19 +137,22 @@ function love.draw()
     love.graphics.draw(mushroom, v.body:getX()-8, v.body:getY()-8)
     v.id = i
   end
-  -- debug player info, in blue
-  love.graphics.setColor(0, 162, 232)
+
+  -- debug player
   local px, py = math.floor(player.body:getX()), math.floor(player.body:getY())
-  love.graphics.print( ("x: %0.0f y: %0.0f"):format(px, py), -tx, -ty)
-  --collision box
-  love.graphics.print("floating: " .. tostring(player.floating), px-32, py-32)
-  -- smooth out point jitter
-  local pts = {player.body:getWorldPoints(player.shape:getPoints())}
-  for i,v in ipairs(pts) do pts[i] = math.floor(v) end
-  -- draw points
-  love.graphics.polygon("line", pts)
-  -- debug collision map, in red
+  player.anim:draw(mario, px - 28, py - 16)
+
+  -- debug collision 
   if showCollide then 
+    love.graphics.setColor(0, 162, 232)
+    love.graphics.print( ("x: %0.0f y: %0.0f"):format(px, py), -tx, -ty)
+    --collision box
+    love.graphics.print("floating: " .. tostring(player.floating), px-32, py-32)
+    -- smooth out point jitter
+    local pts = {player.body:getWorldPoints(player.shape:getPoints())}
+    for i,v in ipairs(pts) do pts[i] = math.floor(v) end
+    -- draw points
+    love.graphics.polygon("line", pts)
     love.graphics.setColor(255, 21, 0)
     map:drawWorldCollision(collision)
   end
@@ -155,9 +161,12 @@ function love.draw()
 end
 
 function love.update(dt)
+  player.anim:update(dt)
   map:update(dt)
   world:update(dt)
+
   push.update(dt)
+
   love.window.setTitle("gravity: " .. tostring(love.timer.getFPS()))
   if action.toggleCollision.pressed then
     showCollide = not showCollide
