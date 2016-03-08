@@ -4,7 +4,7 @@
 -- libraries
 local sti    = require 'sti'
 local push   = require 'inpush'
-local anim   = require 'anim8'
+local anim   = require 'anim8.anim8'
 local action = push.action
 
 -- actual stuff
@@ -67,8 +67,8 @@ local function create_world(args)
 end
 
 local function create_terrain(map)
-  local terrain = map:initWorldCollision(world)
-    for i,c in ipairs(terrain) do
+  local terrain = map:box2d_init(world)
+    for i,c in ipairs(map.box2d_collision) do
       --c.fixture:setFriction(5)
       c.fixture:setCategory(CATEGORIES.STATIC)
     end
@@ -105,7 +105,7 @@ end
 function love.load()
   love.graphics.setBackgroundColor(255,255,255)
   -- map
-  map = sti.new("assets/tube")
+  map = sti.new("assets/tube.lua", {"box2d"})
   -- physiks
   world = create_world{meter = 16}
   collision = create_terrain(map)
@@ -154,7 +154,7 @@ function love.draw()
     -- draw points
     love.graphics.polygon("line", pts)
     love.graphics.setColor(255, 21, 0)
-    map:drawWorldCollision(collision)
+    map:box2d_draw()
   end
   -- restore color
   love.graphics.setColor(r,g,b,a)
