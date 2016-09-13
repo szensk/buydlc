@@ -39,7 +39,7 @@ local function beginContact(a, b, collision)
     -- print(nx, ny)
     -- when you jump and hit a block
     -- unfortunately need to handle when the collision 
-    if nx == -1 and ny == 0 then player.floating = true end
+    if nx == -1 then player.floating = true end
   end
   local item = b:getUserData()
   local actor = a:getUserData()
@@ -78,16 +78,23 @@ end
 
 local function set_controls()
   push.bind('a', function() 
-    player.body:applyForce(-400, 0) 
+    if player.body:getLinearVelocity() > -100 then
+      player.body:applyForce(-600, 0) 
+    end
     player.direction = -1
   end)
   push.bind('d', function() 
-    player.body:applyForce(400, 0) 
+    if player.body:getLinearVelocity() < 100 then
+      player.body:applyForce(600, 0) 
+    end
     player.direction = 1
   end)
   push.bind('w', function() -- jump
     if not player.floating then 
-      player.body:applyForce(0, -6000) 
+      local vx, vy = player.body:getLinearVelocity()
+      if vy > -200 then
+        player.body:applyForce(0, -6000) 
+      end
     end 
   end)
   push.bind('s', function() end) --drop down
