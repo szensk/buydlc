@@ -52,7 +52,7 @@ while not exit do
           h = rects[ind][4],
           id = rects[ind][5]
         })
-		rects[ind] = nil
+				rects[ind] = nil
       end 
     end
   end
