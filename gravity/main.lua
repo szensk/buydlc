@@ -15,6 +15,7 @@ local showCollide = false
 local mario = love.graphics.newImage("assets/marios.png")
 local grid  = anim.newGrid(40, 34, mario:getWidth(), mario:getHeight())
 local player = {
+  direction = 1,
   sx = 3 * 16,
   sy = 28 * 16,
   w = 16,
@@ -76,8 +77,14 @@ local function create_terrain(map)
 end
 
 local function set_controls()
-  push.bind('a', function() player.body:applyForce(-400, 0) end)
-  push.bind('d', function() player.body:applyForce(400, 0) end)
+  push.bind('a', function() 
+    player.body:applyForce(-400, 0) 
+    player.direction = -1
+  end)
+  push.bind('d', function() 
+    player.body:applyForce(400, 0) 
+    player.direction = 1
+  end)
   push.bind('w', function() -- jump
     if not player.floating then 
       player.body:applyForce(0, -6000) 
@@ -140,7 +147,7 @@ function love.draw()
 
   -- debug player
   local px, py = math.floor(player.body:getX()), math.floor(player.body:getY())
-  player.anim:draw(mario, px - 28, py - 16)
+  player.anim:draw(mario, px , py , 0, player.direction, 1, 20, 16)
 
   -- debug collision 
   if showCollide then 
@@ -161,7 +168,7 @@ function love.draw()
 end
 
 function love.update(dt)
-  player.anim:update(dt)
+  --player.anim:update(dt)
   map:update(dt)
   world:update(dt)
 
@@ -174,7 +181,7 @@ function love.update(dt)
 end
 
 function love.mousepressed(x,y, mb)
-  if mb == 'l' then
+  if mb == 1 then
     local tx = love.graphics.getWidth()/2 - (player.body:getX() + player.w/2)
     local ty = love.graphics.getHeight()/2 - (player.body:getY() + player.h/2)
     items[#items + 1] = new_item(x-tx,y-ty, #items)
