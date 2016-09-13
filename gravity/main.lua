@@ -4,7 +4,7 @@
 -- libraries
 local sti    = require 'sti'
 local push   = require 'inpush'
-local anim   = require 'anim8.anim8'
+local anim   = require 'anim8'
 local action = push.action
 
 -- actual stuff
@@ -12,15 +12,18 @@ local map
 local world
 local collision
 local showCollide = false
+local alphaCollide = 255
+
 local mario = love.graphics.newImage("assets/marios.png")
 local grid  = anim.newGrid(40, 34, mario:getWidth(), mario:getHeight())
 local player = {
   direction = 1,
-  sx = 3 * 16,
-  sy = 28 * 16,
+  sx = 784, --3 * 16,
+  sy = 368, --28 * 16,
   w = 16,
   h = 32,
-  floating = true,
+  floating = false,
+  touching = 0,
   shrooms = 0,
   anim = anim.newAnimation(grid('1-8', 1), 0.1)
 }
@@ -31,15 +34,21 @@ local CATEGORIES = {
   ITEMS  = 3
 }
 local items = {}
+local contacts = {}
 
-local function beginContact(a, b, collision)
-  if b:getUserData() == player then
-    player.floating = false
-    local nx, ny = collision:getNormal()
-    -- print(nx, ny)
-    -- when you jump and hit a block
-    -- unfortunately need to handle when the collision 
-    if nx == -1 then player.floating = true end
+local function beginContact(a, b, col)
+  local p = b:getUserData()
+  if p == player then
+    local px = player.body:getX()
+    local x1, y1, x2, y2 = col:getPositions()
+    --local vx, vy = player.body:getLinearVelocity()
+
+    print("hit", ("%.2f "):rep(5):format(x1,y1,x2,y2,px))
+    --hit 799.96 367.76 799.96 351.68
+
+    player.touching = player.touching + 1
+    player.floating = false -- TODO
+    contacts[col] = true -- TODO
   end
   local item = b:getUserData()
   local actor = a:getUserData()
@@ -51,9 +60,14 @@ local function beginContact(a, b, collision)
   end
 end
 
-local function endContact(a, b, collision)
+local function endContact(a, b, col)
   if b:getUserData() == player then
-    player.floating = true
+    --local x1, y1, x2, y2 = col:getPositions()
+    --local vx, vy = player.body:getLinearVelocity()
+
+    player.touching = player.touching - 1
+    contacts[col] = nil -- TODO
+    player.floating = true -- TODO  
   end
 end
 
@@ -70,7 +84,7 @@ end
 local function create_terrain(map)
   local terrain = map:box2d_init(world)
     for i,c in ipairs(map.box2d_collision) do
-      --c.fixture:setFriction(5)
+      c.fixture:setFriction(5)
       c.fixture:setCategory(CATEGORIES.STATIC)
     end
   return terrain
@@ -78,13 +92,15 @@ end
 
 local function set_controls()
   push.bind('a', function() 
-    if player.body:getLinearVelocity() > -100 then
+    if player.body:getLinearVelocity() > -100 and 
+      not (player.floating and player.touching > 0) then
       player.body:applyForce(-600, 0) 
     end
     player.direction = -1
   end)
   push.bind('d', function() 
-    if player.body:getLinearVelocity() < 100 then
+    if player.body:getLinearVelocity() < 100 and 
+      not (player.floating and player.touching > 0)  then
       player.body:applyForce(600, 0) 
     end
     player.direction = 1
@@ -139,13 +155,16 @@ end
 function love.draw()
   -- store color
   local r,g,b,a = love.graphics.getColor()
+
   -- setup camera
   local tx = love.graphics.getWidth()/2 - (player.body:getX() + player.w/2)
   local ty = love.graphics.getHeight()/2 - (player.body:getY() + player.h/2)
   tx, ty = math.floor(tx), math.floor(ty) --removes jitter from subpixel alignment
   love.graphics.translate(tx, ty)
+
   -- draw map
-  map:draw()
+  if not showCollide then map:draw() end
+
   -- draw items
   for i,v in ipairs(items) do
     love.graphics.draw(mushroom, v.body:getX()-8, v.body:getY()-8)
@@ -162,20 +181,36 @@ function love.draw()
     love.graphics.print( ("x: %0.0f y: %0.0f"):format(px, py), -tx, -ty)
     --collision box
     love.graphics.print("floating: " .. tostring(player.floating), px-32, py-32)
+    love.graphics.print("touching: " .. tostring(player.touching), px-32, py-48)
     -- smooth out point jitter
     local pts = {player.body:getWorldPoints(player.shape:getPoints())}
     for i,v in ipairs(pts) do pts[i] = math.floor(v) end
-    -- draw points
+    -- draw player rect
     love.graphics.polygon("line", pts)
-    love.graphics.setColor(255, 21, 0)
+
+    love.graphics.setColor(0, 255, 21)
     map:box2d_draw()
+
+    -- draw active collisions
+    love.graphics.setColor(255, 21, 0, alphaCollide)
+    love.graphics.setLineWidth(2.5)
+    for k,_ in pairs(contacts) do 
+      love.graphics.line(k:getPositions())
+    end
+    love.graphics.setLineWidth(1)
+
   end
   -- restore color
   love.graphics.setColor(r,g,b,a)
 end
 
 function love.update(dt)
-  --player.anim:update(dt)
+  if showCollide then
+    alphaCollide = alphaCollide - 88 * dt
+    if alphaCollide < 128 then alphaCollide = 255 end
+  end
+  
+  --player.anim:update(dt) -- TODO
   map:update(dt)
   world:update(dt)
 
