@@ -22,7 +22,7 @@ local player = {
   sy = 368, --28 * 16,
   w = 16,
   h = 32,
-  floating = false,
+  floating = true,
   touching = 0,
   shrooms = 0,
   anim = anim.newAnimation(grid('1-8', 1), 0.1)
@@ -39,16 +39,19 @@ local contacts = {}
 local function beginContact(a, b, col)
   local p = b:getUserData()
   if p == player then
-    local px = player.body:getX()
+    local py = player.body:getY()
     local x1, y1, x2, y2 = col:getPositions()
-    --local vx, vy = player.body:getLinearVelocity()
 
-    print("hit", ("%.2f "):rep(5):format(x1,y1,x2,y2,px))
-    --hit 799.96 367.76 799.96 351.68
+    --print("begin", py, y1)
 
     player.touching = player.touching + 1
-    player.floating = false -- TODO
-    contacts[col] = true -- TODO
+    if math.abs(y1-y2) < 0.01 and y1 > py then
+      --print("grounded")
+      player.floating = false 
+      contacts[col] = true
+    else
+      contacts[col] = false -- TODO
+    end
   end
   local item = b:getUserData()
   local actor = a:getUserData()
@@ -62,12 +65,12 @@ end
 
 local function endContact(a, b, col)
   if b:getUserData() == player then
-    --local x1, y1, x2, y2 = col:getPositions()
-    --local vx, vy = player.body:getLinearVelocity()
-
+    --print("end", contacts[col])
+    if contacts[col] then 
+      player.floating = true
+    end
     player.touching = player.touching - 1
     contacts[col] = nil -- TODO
-    player.floating = true -- TODO  
   end
 end
 
